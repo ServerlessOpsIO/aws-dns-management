@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: CFN DNS Record Automation
+
+Parameters:
+  CustomResourceTopic:
+    Type: AWS::SSM::Parameter::Value<String>
+    Description: SNS Topic for Custom Resources
+    Default: /org/cicd/CustomResourceTopic
+  DnsRootZoneId:
+    Type: String
+    Description: Hosted Zone ID
+    Default: /org/cicd/HostedZoneId
+
+Resources:
+  RegisterDnsZoneFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: function.handler
+      Runtime: python3.12
+      CodeUri: ../../src/handlers/RegisterDnsZone
+      Description: Register DNS Sub Zone
+      MemorySize: 128
+      Timeout: 10
+      Environment:
+        Variables:
+          DNS_ROOT_ZONE_ID: !Ref DnsRootZoneId
+      Events:
+        RegisterDnsSubZone:
+          Type: SNS
+          Properties:
+            Topic: !Ref CustomResourceTopic
+            FilterPolicyScope: MessageBody
+            FilterPolicy:
+              ResourceType:
+                - Custom::RegisterDnsZone
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - route53:ChangeResourceRecordSets
+              Resource: !Sub arn:aws:route53:::hostedzone/${DnsRootZoneId}

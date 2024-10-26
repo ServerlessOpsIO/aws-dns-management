@@ -1,0 +1,7 @@
+{
+  "Status" : "SUCCESS",
+  "StackId" : "arn:aws:cloudformation:us-east-1:123456789012:stack/mystack/5b918d10-cd98-11ea-90d5-0a9cd3354c10",
+  "RequestId" : "uniqueid for this update request",
+  "LogicalResourceId" : "RegisterDnsZoneFunction",
+  "PhysicalResourceId" : "stack-RegisterDnsZoneFunction-main"
+}

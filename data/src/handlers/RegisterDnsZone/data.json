@@ -1,0 +1,9 @@
+{
+  "ZoneName" : "test.example.com",
+  "NameServers": [
+    "ns1.example.com",
+    "ns2.example.com",
+    "ns3.example.com",
+    "ns4.example.com"
+  ]
+}

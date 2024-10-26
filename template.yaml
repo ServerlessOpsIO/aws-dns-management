@@ -4,6 +4,8 @@ Description: DNS Domain Management
 Metadata:
   DnsRoot:
     localTemplateFile: &dns_zone_template_body ./stacksets/dns-zone/stackset.yaml
+  DnsCfnCr:
+    localTemplateFile: &cfn_cr_template_body ./stacksets/cfn-cr/translated-stackset.json
 
 Parameters:
   TargetOuIds:
@@ -45,3 +47,33 @@ Resources:
         MaxConcurrentCount: 5
       PermissionModel: SERVICE_MANAGED
       TemplateBody: *dns_zone_template_body
+
+
+  DnsCfnCr:
+    Type: AWS::CloudFormation::StackSet
+    DependsOn: DnsRootDomain  # We need the root domain to be created firsy so this stack can 
+                              # get the DNS  zone ID.
+    Properties:
+      StackSetName: DnsCfnCr
+      Description: DNS CloudFormation Custom Resources
+      #Parameters:  # We don't need parameters for this stackset because it uses SSM params to 
+                    # find values. It's the only way we can get the Hosted Zone ID
+      StackInstancesGroup:
+        - DeploymentTargets:
+            AccountFilterType: INTERSECTION
+            OrganizationalUnitIds: !Ref TargetOuIds
+            Accounts: !Ref TargetAccountIds
+          Regions: !Ref TargetRegions
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        RegionConcurrencyType: PARALLEL
+        FailureToleranceCount: 1
+        MaxConcurrentCount: 5
+      PermissionModel: SERVICE_MANAGED
+      Capabilities:
+        - CAPABILITY_IAM
+      TemplateBody: *cfn_cr_template_body
