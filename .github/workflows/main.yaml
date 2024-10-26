@@ -1,0 +1,84 @@
+name: Main
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Setup job workspace
+        uses: ServerlessOpsIO/gha-setup-workspace@v1
+
+      - name: Assume AWS Credentials
+        uses: ServerlessOpsIO/gha-assume-aws-credentials@v1
+        with:
+          build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
+
+      - name: Install AWS SAM
+        uses: aws-actions/setup-sam@v2
+
+      # FIXME: We're only validating the top-level template and not the rest.
+      - name: Validate SAM template
+        run: sam validate --lint -t template.yaml
+
+      - name: Validate StackSets SAM template (DNS Zone)
+        run: sam validate --lint -t stacksets/dns-zone/stackset.yaml
+
+      - name: Synethsize StackSet templates
+        run: |
+          for _f in $(find . -type f -name 'template.yaml'); do
+            _dir="$(dirname $_f)/" \
+            yq \
+              -i \
+              '(.. | select(has("localTemplateFile")) | .localTemplateFile) |= load_str(strenv(_dir) + .)' \
+              $_f;
+          done
+
+      - name: Package SAM artifact (Stacksets Template)
+        id: package-sam-stacksets
+        uses: ServerlessOpsIO/gha-package-aws-sam@v1
+        with:
+          packaged_template_file: packaged-template.yaml
+
+      - name: Store Artifacts
+        uses: ServerlessOpsIO/gha-store-artifacts@v1
+
+
+  deploy_stacksets:
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Setup job workspace
+        uses: ServerlessOpsIO/gha-setup-workspace@v1
+        with:
+          checkout_artifact: true
+
+      - name: Assume AWS Credentials
+        uses: ServerlessOpsIO/gha-assume-aws-credentials@v1
+        with:
+          build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
+          gha_build_role_name: ${{ secrets.AWS_CICD_BUILD_ROLE_NAME }}
+          deploy_aws_account_id: ${{ secrets.AWS_MANAGEMENT_ACCOUNT_ID }}
+          gha_deploy_role_name: ${{ secrets.AWS_CICD_DEPLOY_ROLE_NAME }}
+
+      - name: Deploy via AWS SAM
+        uses: ServerlessOpsIO/gha-deploy-aws-sam@v1
+        with:
+          aws_account_id: ${{ secrets.AWS_MANAGEMENT_ACCOUNT_ID }}
+          template_file: packaged-template.yaml
+          cfn_capabilities: CAPABILITY_AUTO_EXPAND
+          env_json: ${{ toJson(env) }}
+          secrets_json: ${{ toJson(secrets) }}

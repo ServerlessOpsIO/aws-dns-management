@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: DNS Domain
+
+Parameters:
+  RootDomainName:
+    Type: String
+    Description: Root domain name
+
+Resources:
+  ServerlessOps:
+    Type: "AWS::Route53::HostedZone"
+    Properties:
+      Name: !Ref RootDomainName
+      HostedZoneConfig:
+        Comment: ServerlessOps
+
+  ServerlessOpsRR:
+    Type: "AWS::Route53::RecordSetGroup"
+    Properties:
+      Comment: "Apex Records"
+      HostedZoneId: !Ref ServerlessOps
+      RecordSets:
+        - Name: !Sub "${RootDomainName}."
+          Type: "MX"
+          TTL: 300
+          ResourceRecords:
+            - 1 aspmx.l.google.com
+            - 5 alt1.aspmx.l.google.com
+            - 5 alt2.aspmx.l.google.com
+            - 10 alt3.aspmx.l.google.com
+            - 10 alt4.aspmx.l.google.com
+            - 15 n2235kmtje5chj5uz63i3sluem7gtehtp5dlmladr2nfntojbqpq.mx-verification.google.com.
+        - Name: !Ref RootDomainName
+          Type: "TXT"
+          TTL: 14400
+          ResourceRecords:
+            - "\"v=spf1 include:_spf.google.com include:277116.spf08.hubspotemail.net ~all\""
+
+
+  # WWW
+  ServerlessOpsWww:
+    Type: "AWS::Route53::RecordSet"
+    Properties:
+      Comment: "Website"
+      HostedZoneId: !Ref ServerlessOps
+      Name: !Sub "www.${RootDomainName}."
+      Type: "CNAME"
+      TTL: 3600
+      ResourceRecords:
+        - 277116.group16.sites.hubspot.net
+
+  # Hubspot
+  ServerlessOpsDomainKeyHs1:
+    Type: "AWS::Route53::RecordSet"
+    Properties:
+      Comment: "HubSpot domain key"
+      HostedZoneId: !Ref ServerlessOps
+      Name: !Sub "hs1._domainkey.${RootDomainName}."
+      Type: "CNAME"
+      TTL: 3600
+      ResourceRecords:
+        - serverlessops-io.hs01a.dkim.hubspotemail.net
+
+  ServerlessOpsDomainKeyHs2:
+    Type: "AWS::Route53::RecordSet"
+    Properties:
+      Comment: "HubSpot domain key"
+      HostedZoneId: !Ref ServerlessOps
+      Name: !Sub "hs2._domainkey.${RootDomainName}."
+      Type: "CNAME"
+      TTL: 3600
+      ResourceRecords:
+        - serverlessops-io.hs01b.dkim.hubspotemail.net
+
+  ServerlessOpsDomainKeySmtpapi:
+    Type: "AWS::Route53::RecordSet"
+    Properties:
+      Comment: "HubSpot domain key"
+      HostedZoneId: !Ref ServerlessOps
+      Name: !Sub "smtpapi._domainkey.${RootDomainName}."
+      Type: "TXT"
+      TTL: 3600
+      # Those escape secquences are necessary.
+      ResourceRecords:
+        - "\"k=rsa; t=s; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDPtW5iwpXVPiH5FzJ7Nrl8USzuY9zqqzjE0D1r04xDN6qwziDnmgcFNNfMewVKN2D1O+2J9N14hRprzByFwfQW76yojh54Xu3uSbQ3JP0A7k8o8GutRF8zbFUA8n0ZH2y0cIEjMliXY4W4LwPA7m4q0ObmvSjhd63O9d8z1XkUBwIDAQAB\""

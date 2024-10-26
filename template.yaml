@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: DNS Domain Management
+
+Metadata:
+  DnsRoot:
+    localTemplateFile: &dns_zone_template_body ./stacksets/dns-zone/stackset.yaml
+
+Parameters:
+  TargetOuIds:
+    Type: CommaDelimitedList
+    Description: Target deployment OU IDs
+  TargetAccountIds:
+    Type: CommaDelimitedList
+    Description: Target Accounts
+  TargetRegions:
+    Type: CommaDelimitedList
+    Description: Target deployment region
+  RootDomainName:
+    Type: String
+    Description: Root domain name
+
+Resources:
+  DnsRootDomain:
+    Type: AWS::CloudFormation::StackSet
+    Properties:
+      StackSetName: DnsRootDomain
+      Description: DNS Root Domain
+      Parameters:
+        - ParameterKey: RootDomainName
+          ParameterValue: !Ref RootDomainName
+      StackInstancesGroup:
+        - DeploymentTargets:
+            AccountFilterType: INTERSECTION
+            OrganizationalUnitIds: !Ref TargetOuIds
+            Accounts: !Ref TargetAccountIds
+          Regions: !Ref TargetRegions
+      AutoDeployment:
+        Enabled: true
+        RetainStacksOnAccountRemoval: false
+      ManagedExecution:
+        Active: true
+      OperationPreferences:
+        RegionConcurrencyType: PARALLEL
+        FailureToleranceCount: 1
+        MaxConcurrentCount: 5
+      PermissionModel: SERVICE_MANAGED
+      TemplateBody: *dns_zone_template_body
