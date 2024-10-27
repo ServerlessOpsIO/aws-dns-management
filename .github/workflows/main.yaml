@@ -66,6 +66,10 @@ jobs:
             --template-file stacksets/cfn-cr/packaged-stackset.yaml \
             --output-template stacksets/cfn-cr/translated-stackset.json
 
+      # Need to do this so later steps don't pickup the wrong template.
+      - name: SAM clean (CFN CR)
+        run: rm -rf .aws-sam
+
       - name: Synethsize StackSet templates
         run: |
           for _f in $(find . -type f -name 'template.yaml'); do
