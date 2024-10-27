@@ -40,6 +40,11 @@ jobs:
       - name: Validate StackSets SAM template (CFN CR)
         run: sam validate --lint -t stacksets/cfn-cr/stackset.yaml
 
+      - name: Unit tests
+        id: unit-tests
+        shell: bash
+        run: pipenv run pytest
+
       # Stacksets can't use CFN transforms so we need to handle the SAM transform ourselves.
       - name: SAM build (CFN CR)
         id: sam-build-cfn-cr

@@ -8,11 +8,9 @@ from aws_lambda_powertools.utilities.data_classes import (
     SNSEvent
 )
 from collections import namedtuple
-from datetime import datetime, timedelta
 from moto import mock_aws
 from mypy_boto3_route53 import Route53Client
 from mypy_boto3_sts import STSClient
-from mypy_boto3_sts.type_defs import CredentialsTypeDef
 from pytest_mock import MockerFixture
 from types import ModuleType
 from typing import cast, Generator, Tuple
@@ -60,33 +58,9 @@ def mocked_aws(aws_credentials):
     with mock_aws():
         yield
 
-@pytest.fixture()
-def mock_sts_client(mocked_aws) -> Generator[STSClient, None, None]:
-    with mock_aws():
-        yield boto3.client('sts')
-
 @pytest.fixture
-def mock_cross_account_iam_credentials(mock_sts_client) -> CredentialsTypeDef:
-    '''Mocked cross-account IAM credentials'''
-
-    credentials: CredentialsTypeDef = {
-        'AccessKeyId': 'cross_account_testing',
-        'SecretAccessKey': 'cross_account_testing',
-        'SessionToken': 'cross_account_testing',
-        'Expiration': datetime.now() + timedelta(hours=1)
-    }
-
-    return credentials
-
-
-@pytest.fixture
-def mock_route53_client(mocked_aws, mock_cross_account_iam_credentials) -> Generator[Route53Client, None, None]:
-    yield boto3.client(
-        'route53',
-        aws_access_key_id=mock_cross_account_iam_credentials['AccessKeyId'],
-        aws_secret_access_key=mock_cross_account_iam_credentials['SecretAccessKey'],
-        aws_session_token=mock_cross_account_iam_credentials['SessionToken']
-    )
+def mock_route53_client(mocked_aws) -> Generator[Route53Client, None, None]:
+    yield boto3.client('route53')
 
 @pytest.fixture()
 def mock_hosted_zone_id(mock_route53_client: Route53Client) -> str:
@@ -159,7 +133,6 @@ def mock_data(data: str = DATA) -> EventResourceProperties:
 def mock_fn(
     mocked_aws,
     mock_hosted_zone_id: str,
-    mock_cross_account_id: str,
     mocker: MockerFixture,
 ) -> Generator[ModuleType, None, None]:
     '''Patch the environment variables for the function'''
@@ -169,60 +142,10 @@ def mock_fn(
         'src.handlers.RegisterDnsZone.function.DNS_ROOT_ZONE_ID',
         mock_hosted_zone_id
     )
-    mocker.patch(
-        'src.handlers.RegisterDnsZone.function.DNS_ROOT_ZONE_ACCOUNT_ID',
-        mock_cross_account_id
-    )
-
     yield fn
 
 
 # Tests
-def test__get_cross_account_credentials(
-    mock_fn: ModuleType,
-    mock_cross_account_id: str,
-) -> None:
-    role_name = 'MockRegisterDnsZoneCrossAccountRole'
-
-    # Call the create_or_update function
-    credentials = mock_fn._get_cross_account_credentials(mock_cross_account_id, role_name)
-
-    # Verify credentials exist and that we got new ones
-    assert credentials is not None
-    assert isinstance(credentials, dict)
-    assert isinstance(credentials['AccessKeyId'], str)
-    assert isinstance(credentials['SecretAccessKey'], str)
-    assert isinstance(credentials['SessionToken'], str)
-
-
-def test__get_cross_account_route53_client(
-    mock_fn: ModuleType,
-    mock_cross_account_iam_credentials: CredentialsTypeDef,
-    mock_hosted_zone_id: str,
-    mocker: MockerFixture,
-) -> None:
-
-    mocker.patch(
-        'src.handlers.RegisterDnsZone.function._get_cross_account_credentials',
-        return_value=mock_cross_account_iam_credentials
-    )
-
-    cross_account_id = mock_fn.DNS_ROOT_ZONE_ACCOUNT_ID
-    role_name = mock_fn.CROSS_ACCOUNT_IAM_ROLE_NAME
-
-    # Call the create_or_update function
-    client = mock_fn._get_cross_account_route53_client(cross_account_id, role_name)
-
-    # Verify the NS record was created
-    assert client is not None
-    assert client.meta.endpoint_url == 'https://route53.amazonaws.com'
-    assert client.meta.region_name == 'aws-global'
-    assert client.meta.config.user_agent.startswith('Boto3/')
-
-    zones = client.list_hosted_zones()
-    assert zones is not None
-    # Ensure we have a route53 client with credentials for the cross-account
-    assert zones['HostedZones'][0]['Id'] == mock_hosted_zone_id
 
 
 def test_create_or_update_as_create(
@@ -237,11 +160,6 @@ def test_create_or_update_as_create(
     event = mock_message_create._data
     event['ResourceProperties']['ZoneName'] = mock_data.ZoneName
     event['ResourceProperties']['NameServers'] = mock_data.NameServers
-
-    mocker.patch(
-        'src.handlers.RegisterDnsZone.function._get_cross_account_route53_client',
-        return_value=mock_route53_client
-    )
 
     # Call the create_or_update function
     mock_fn.create_or_update(event, mock_context)
@@ -281,11 +199,6 @@ def test_create_or_update_as_update(
     event['ResourceProperties']['ZoneName'] = mock_data.ZoneName
     event['ResourceProperties']['NameServers'] = mock_data.NameServers
 
-    mocker.patch(
-        'src.handlers.RegisterDnsZone.function._get_cross_account_route53_client',
-        return_value=mock_route53_client
-    )
-
     # Call the create_or_update function
     mock_fn.create_or_update(event, mock_context)
 
@@ -321,11 +234,6 @@ def test_delete(
     mock_hosted_zone_id: str,
     mocker: MockerFixture,
 ) -> None:
-
-    mocker.patch(
-        'src.handlers.RegisterDnsZone.function._get_cross_account_route53_client',
-        return_value=mock_route53_client
-    )
 
     # Create record to be deleted
     create_event = mock_message_create._data
