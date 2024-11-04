@@ -88,7 +88,7 @@ Resources:
   HostedZoneIdSsmParam:
     Type: "AWS::SSM::Parameter"
     Properties:
-      Name: /org/cicd/HostedZoneId
+      Name: /org/dns/RootZoneId
       Type: String
       Description: Hosted Zone ID
       Value: !Ref ServerlessOps
