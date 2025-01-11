@@ -2,7 +2,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: aws-aws-dns-management
+  name: aws-dns-management
   description: DNS Management
   annotations:
     github.com/project-slug: ServerlessOpsIO/aws-dns-management
