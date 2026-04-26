@@ -10,7 +10,7 @@ Parameters:
   DnsRootZoneId:
     Type: AWS::SSM::Parameter::Value<String>
     Description: Hosted Zone ID
-    Default: /org/cicd/HostedZoneId
+    Default: /org/dns/HostedZoneId
 
 Resources:
   RegisterDnsZoneFunction:
