@@ -100,11 +100,6 @@ jobs:
         with:
           checkout_artifact: true
 
-      - name: Setup Python environment
-        uses: ServerlessOpsIO/gha-setup-python@v1
-        with:
-          python_version: 3.12
-
       - name: Assume AWS Credentials
         uses: ServerlessOpsIO/gha-assume-aws-credentials@v1
         with:
