@@ -12,8 +12,8 @@ Resources:
     Type: AWS::Serverless::Application
     Properties:
       Location: "./stacks/dns-zone/template.yaml"
-#      Parameters:
-#        RootDomainName: !Ref RootDomainName
+      Parameters:
+        RootDomainName: !Ref RootDomainName
 
   DnsCfnCr:
     Type: AWS::Serverless::Application
