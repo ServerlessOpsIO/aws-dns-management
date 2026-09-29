@@ -19,5 +19,5 @@ Resources:
     Type: AWS::Serverless::Application
     Properties:
       Location: "./stacks/cfn-cr/template.yaml"
-#      Parameters:
-#        DnsRootZoneId: !GetAtt DnsRootDomain.Outputs.HostedZoneId
+      Parameters:
+        DnsRootZoneId: !GetAtt DnsRootDomain.Outputs.HostedZoneId
