@@ -92,3 +92,8 @@ Resources:
       Type: String
       Description: Hosted Zone ID
       Value: !Ref ServerlessOps
+
+Outputs:
+  HostedZoneId:
+    Description: Hosted Zone ID
+    Value: !Ref ServerlessOps

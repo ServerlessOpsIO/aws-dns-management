@@ -35,50 +35,18 @@ jobs:
         run: sam validate --lint -t template.yaml
 
       - name: Validate StackSets SAM template (DNS Zone)
-        run: sam validate --lint -t stacksets/dns-zone/stackset.yaml
+        run: sam validate --lint -t stacks/dns-zone/template.yaml
 
       - name: Validate StackSets SAM template (CFN CR)
-        run: sam validate --lint -t stacksets/cfn-cr/stackset.yaml
+        run: sam validate --lint -t stacks/cfn-cr/template.yaml
 
       - name: Unit tests
         id: unit-tests
         shell: bash
         run: pipenv run pytest
 
-      # Stacksets can't use CFN transforms so we need to handle the SAM transform ourselves.
-      - name: SAM build (CFN CR)
-        id: sam-build-cfn-cr
-        shell: bash
-        run: sam build -t stacksets/cfn-cr/stackset.yaml
-
-      - name: Package SAM artifact (CFN CR)
-        id: package-sam-cfn-cr
-        uses: ServerlessOpsIO/gha-package-aws-sam@v1
-        with:
-          packaged_template_file: stacksets/cfn-cr/packaged-stackset.yaml
-
-      - name: Transform SAM template (CFN CR)
-        id: transform-sam-template
-        shell: bash
-        run: |
-          wget https://raw.githubusercontent.com/aws/serverless-application-model/refs/heads/develop/bin/sam-translate.py
-          pipenv run python sam-translate.py \
-            --template-file stacksets/cfn-cr/packaged-stackset.yaml \
-            --output-template stacksets/cfn-cr/translated-stackset.json
-
-      # Need to do this so later steps don't pickup the wrong template.
-      - name: SAM clean (CFN CR)
-        run: rm -rf .aws-sam
-
-      - name: Synethsize StackSet templates
-        run: |
-          for _f in $(find . -type f -name 'template.yaml'); do
-            _dir="$(dirname $_f)/" \
-            yq \
-              -i \
-              '(.. | select(has("localTemplateFile")) | .localTemplateFile) |= load_str(strenv(_dir) + .)' \
-              $_f;
-          done
+      - name: SAM Build
+        run: sam build -t template.yaml
 
       - name: Store Artifacts
         uses: ServerlessOpsIO/gha-store-artifacts@v2
@@ -104,14 +72,12 @@ jobs:
         uses: ServerlessOpsIO/gha-assume-aws-credentials@v1
         with:
           build_aws_account_id: ${{ secrets.AWS_CICD_ACCOUNT_ID }}
-          gha_build_role_name: ${{ secrets.AWS_CICD_BUILD_ROLE_NAME }}
-          deploy_aws_account_id: ${{ secrets.AWS_MANAGEMENT_ACCOUNT_ID }}
-          gha_deploy_role_name: ${{ secrets.AWS_CICD_DEPLOY_ROLE_NAME }}
+          deploy_aws_account_id: ${{ secrets.DEPLOYMENT_ACCOUNT_ID }}
 
       - name: Deploy via AWS SAM
         uses: ServerlessOpsIO/gha-deploy-aws-sam@v1
         with:
-          aws_account_id: ${{ secrets.AWS_MANAGEMENT_ACCOUNT_ID }}
+          aws_account_id: ${{ secrets.DEPLOYMENT_ACCOUNT_ID }}
           template_file: packaged-template.yaml
           env_json: ${{ toJson(env) }}
           secrets_json: ${{ toJson(secrets) }}

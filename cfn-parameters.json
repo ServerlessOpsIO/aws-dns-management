@@ -1,6 +1,3 @@
 {
-    "RootDomainName": "serverlessops.io",
-    "TargetOuIds": $secrets.AWS_ORG_ROOT_ID,
-    "TargetAccountIds": $secrets.DEPLOYMENT_ACCOUNT_ID,
-    "TargetRegions": "us-east-1"
+    "RootDomainName": "serverlessops.io"
 }

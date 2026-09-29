@@ -8,9 +8,8 @@ Parameters:
     Description: SNS Topic for Custom Resources
     Default: /org/cicd/CustomResourceTopic
   DnsRootZoneId:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
     Description: Hosted Zone ID
-    Default: /org/dns/HostedZoneId
 
 Resources:
   RegisterDnsZoneFunction:
