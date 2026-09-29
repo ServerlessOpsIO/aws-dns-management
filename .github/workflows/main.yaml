@@ -77,6 +77,7 @@ jobs:
       - name: Deploy via AWS SAM
         uses: ServerlessOpsIO/gha-deploy-aws-sam@v1
         with:
+          cfn_capabilities: CAPABILITY_IAM, CAPABILITY_NAMED_IAM, CAPABILITY_AUTO_EXPAND
           aws_account_id: ${{ secrets.DEPLOYMENT_ACCOUNT_ID }}
           template_file: packaged-template.yaml
           env_json: ${{ toJson(env) }}
