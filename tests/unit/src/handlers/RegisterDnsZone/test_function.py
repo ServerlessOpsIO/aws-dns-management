@@ -10,7 +10,6 @@ from aws_lambda_powertools.utilities.data_classes import (
 from collections import namedtuple
 from moto import mock_aws
 from mypy_boto3_route53 import Route53Client
-from mypy_boto3_sts import STSClient
 from pytest_mock import MockerFixture
 from types import ModuleType
 from typing import cast, Generator, Tuple

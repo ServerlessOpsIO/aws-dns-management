@@ -6,7 +6,7 @@ from crhelper import CfnResource
 from mypy_boto3_route53 import Route53Client
 from mypy_boto3_route53.type_defs import (
     ChangeBatchTypeDef,
-    ChangeResourceRecordSetsRequestRequestTypeDef
+    ChangeResourceRecordSetsRequestTypeDef
 )
 from typing import Dict
 
@@ -67,7 +67,7 @@ def create_or_update(event, _: LambdaContext):
         ]
     }
 
-    change_args: ChangeResourceRecordSetsRequestRequestTypeDef = {
+    change_args: ChangeResourceRecordSetsRequestTypeDef = {
         'HostedZoneId': DNS_ROOT_ZONE_ID,
         'ChangeBatch': change_batch
     }
