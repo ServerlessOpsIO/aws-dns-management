@@ -16,7 +16,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Handler: function.handler
-      Runtime: python3.12
+      Runtime: python3.14
       CodeUri: ../../src/handlers/RegisterDnsZone
       Description: Register DNS Sub Zone
       MemorySize: 128
